@@ -5,6 +5,7 @@
 #include <array>
 #include <fstream>
 #include <cassert>
+#include <iostream>
 
 namespace VL {
 
@@ -20,6 +21,7 @@ enum class SegType{
   CBezier, // Cubic Bezier
 };
 
+// all the coordinates are absolute value
 template <typename T>
 class Segment {
   public:
@@ -107,9 +109,53 @@ Field extract_attribute(std::string& input) {
   return Field { attr, cont, false };
 }
 
-template <typename T>
-Path<T> process_path(const std::string& path_string) {
+void erase_specific_string(std::string& input, const char c) {
+  int pos = 0;
+  while (pos < input.length()) {
+    bool remove_flag = false;
+    while (input[pos] != c && pos < input.length()) {
+      pos++;
+      remove_flag = true;
+    }
+    if (remove_flag)
+      input.erase(pos, 1);
+  }
+}
 
+template <typename T>
+std::vector<Vec2<T>> extract_values(std::string& input) {
+  int pos = 0;
+
+  auto is_letter = [](const char c) { return ('a' <= c && c <= 'z') || ('A' <= c && c <= 'Z'); };
+
+  // extract first segment
+  while (!is_letter(input[pos]) && pos < input.length()) { pos++; }
+  auto value_str = input.substr(0, pos);
+  input = input.substr(pos);
+
+
+}
+
+template <typename T>
+Path<T> process_path(std::string& path_string) {
+  // erase space
+  erase_specific_string(path_string, ' ');
+
+  Vec2<T> last_point = Vec2<T>::zero();
+
+  // check closed
+  bool is_closed = false;
+  if (path_string[path_string.length() - 1] == 'z' || path_string[path_string.length() - 1] == 'Z') {
+    is_closed = true;
+  }
+  assert (is_closed && "path must be closed.");
+
+  // get beginning point
+  assert(path_string[0] == 'm' || path_string[0] == 'M');
+  auto is_digit = [](const char c){ return c >= '0' && c <= '9'; };
+  char type = path_string[0];
+  path_string = path_string.substr(1);
+  auto k = extract_values<T>(path_string);
 }
 
 template <typename T>
@@ -142,7 +188,7 @@ Path<T> parse_svg(const std::string& filepath) {
     attr = extract_attribute(new_field.content);
   }
 
-  return process_path<T>(new_field.content);
+  return process_path<T>(attr.content);
 }
 
 } // namespace VL
