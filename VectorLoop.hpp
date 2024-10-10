@@ -6,7 +6,6 @@
 #include <array>
 #include <fstream>
 #include <cassert>
-#include <complex.h>
 #include <iostream>
 
 namespace VL {
