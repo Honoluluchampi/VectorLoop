@@ -4,6 +4,7 @@
 #include <vector>
 #include <array>
 #include <fstream>
+#include <cassert>
 
 namespace VL {
 
@@ -49,7 +50,9 @@ class Path {
 };
 
 struct Field {
-  std::string tag; std::string field;
+  std::string tag;
+  std::string content;
+  bool is_end = false;
 };
 
 // extract the first field of the input text
@@ -58,6 +61,10 @@ Field extract_field(std::string& input) {
   // detect tag start
   while (input[pos] != '<') { pos++; }
   int start = pos;
+  // check weather this field is end field
+  bool is_end = false;
+  if (input[start + 1] == '\\')
+    is_end = true;
   // get tag
   while (input[pos] != ' ') { pos++; }
   int tag_end = pos;
@@ -67,7 +74,8 @@ Field extract_field(std::string& input) {
 
   Field field = {
     input.substr(start + 1, tag_end - start - 1),
-    input.substr(tag_end + 1, field_end - tag_end - 1)
+    input.substr(tag_end + 1, field_end - tag_end - 1),
+    is_end
   };
 
   input = input.substr(field_end + 1);
@@ -75,8 +83,37 @@ Field extract_field(std::string& input) {
   return field;
 }
 
+Field extract_attribute(std::string& input) {
+  int pos = 0;
+  // extract attr tag
+  while (input[pos] == ' ') { pos++; }
+  int attr_start = pos;
+  while (input[pos] != '=') { pos++; }
+  int attr_end = pos;
+
+  auto attr = input.substr(attr_start, attr_end - attr_start);
+
+  // extract attr content
+  while (input[pos] != '\"') { pos++; }
+  int cont_start = pos + 1;
+  pos++;
+  while (input[pos] != '\"') { pos++; }
+  int cont_end = pos;
+
+  auto cont = input.substr(cont_start, cont_end - cont_start);
+
+  input = input.substr(cont_end + 1);
+
+  return Field { attr, cont, false };
+}
+
 template <typename T>
-Path<T> extract_path(const std::string& filepath) {
+Path<T> process_path(const std::string& path_string) {
+
+}
+
+template <typename T>
+Path<T> parse_svg(const std::string& filepath) {
   // read whole file
   std::string line;
   std::string file_contents;
@@ -88,11 +125,24 @@ Path<T> extract_path(const std::string& filepath) {
 
   // ignore svg field
   auto svg_field = extract_field(file_contents);
+  assert(svg_field.tag == "svg");
 
+  // also ignore g field and extract path field
+  Field new_field;
+  while (new_field.tag != "g") {
+    new_field = extract_field(file_contents);
+  }
+  while (new_field.tag != "path") {
+    new_field = extract_field(file_contents);
+  }
+
+  // search 'd' attribute
+  Field attr;
+  while (attr.tag != "d") {
+    attr = extract_attribute(new_field.content);
+  }
+
+  return process_path<T>(new_field.content);
 }
-
-// returns polyloop's coordinates in one line
-template <typename T>
-std::vector<T> parse_svg() {}
 
 } // namespace VL

@@ -1,5 +1,5 @@
 #include "VectorLoop.hpp"
 
 int main() {
-  auto path = VL::extract_path<float>("sample_assets/dog_face.svg");
+  auto path = VL::parse_svg<float>("sample_assets/dog_face.svg");
 }
