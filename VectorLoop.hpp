@@ -133,7 +133,34 @@ std::vector<Vec2<T>> extract_values(std::string& input) {
   auto value_str = input.substr(0, pos);
   input = input.substr(pos);
 
+  std::vector<T> raw_values;
+  int current_pos = 0;
+  int last_pos = 0;
+  while (current_pos < value_str.length()) {
+    if (value_str[current_pos] == ',') {
+      raw_values.push_back(static_cast<T>(std::stod(value_str.substr(last_pos, current_pos - 1))));
+      last_pos = current_pos + 1;
+    }
+    if (value_str[current_pos] == '-') {
+      raw_values.push_back(static_cast<T>(std::stod(value_str.substr(last_pos, current_pos - 1))));
+      last_pos = current_pos;
+    }
+    if (current_pos == value_str.length() - 1) {
+      raw_values.push_back(static_cast<T>(std::stod(value_str.substr(last_pos, current_pos - 1))));
+    }
+    current_pos++;
+  }
 
+  // pack into Vec2
+  assert (raw_values.size() % 2 == 0);
+  size_t num_vec2 = raw_values.size() / 2;
+  std::vector<Vec2<T>> vec2s(num_vec2, Vec2<T>::zero());
+  for (int i = 0; i < num_vec2; i++) {
+    vec2s[i].x = raw_values[2 * i + 0];
+    vec2s[i].y = raw_values[2 * i + 1];
+  }
+
+  return vec2s;
 }
 
 template <typename T>
