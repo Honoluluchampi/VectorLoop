@@ -332,9 +332,6 @@ Path<T> parse_svg(const std::string& filepath) {
 
   // also ignore g field and extract path field
   Field new_field;
-  while (new_field.tag != "g") {
-    new_field = extract_field(file_contents);
-  }
   while (new_field.tag != "path") {
     new_field = extract_field(file_contents);
   }
