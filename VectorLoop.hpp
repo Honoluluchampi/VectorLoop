@@ -1,6 +1,5 @@
 #pragma once
 
-#include <Python.h>
 #include <cmath>
 #include <string>
 #include <vector>
@@ -448,6 +447,18 @@ std::vector<Vec2<T>> polyrize_pathloop(const Path<T>& pathloop, int div_count) {
     }
   }
 
+  return ret;
+}
+
+template <typename T>
+std::vector<T> polyrize_svg(const std::string& file_path, int div_count) {
+  auto path = parse_svg<T>(file_path);
+  auto poly = polyrize_pathloop(path, div_count);
+  std::vector<T> ret(poly.size() * 2, 0);
+  for (int i = 0; i < poly.size(); i++) {
+    ret[2 * i + 0] = poly[i].x;
+    ret[2 * i + 1] = poly[i].y;
+  }
   return ret;
 }
 
