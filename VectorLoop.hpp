@@ -1,5 +1,6 @@
 #pragma once
 
+#include <Python.h>
 #include <cmath>
 #include <string>
 #include <vector>
@@ -420,7 +421,7 @@ std::vector<Vec2<T>> polyrize_pathloop(const Path<T>& pathloop, int div_count) {
   for (int i = 0; i < num_segment; i++) {
     const auto& segment = pathloop[i];
     const auto& points = segment.points();
-    int local_div = static_cast<int>(segment_lengths[i] / whole_length * div_count);
+    int local_div = static_cast<int>(segment_lengths[i] / whole_length * div_count) + 1;
     for (int j = 0; j < local_div; j++) {
       T param = T(j) / T(local_div);
       switch (segment.type()) {
