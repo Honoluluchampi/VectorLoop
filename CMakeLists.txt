@@ -10,3 +10,6 @@ pybind11_add_module(VectorLoop pybind.cpp)
 target_include_directories(VectorLoop PUBLIC
         submodules/pybind11/include
         /usr/include/python3.10)
+
+# sample -----------------------------------------------------
+add_executable(VectorLoopSample sample.cpp)

@@ -323,6 +323,9 @@ Path<T> parse_svg(const std::string& filepath) {
   }
   file_in.close();
 
+  if (file_contents == "")
+    std::cerr << "failed to load file" << std::endl;
+
   // ignore svg field
   auto svg_field = extract_field(file_contents);
   assert(svg_field.tag == "svg");
