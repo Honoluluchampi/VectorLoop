@@ -48,6 +48,33 @@ class Path {
     bool is_closed_ = true;
 };
 
+struct Field {
+  std::string tag; std::string field;
+};
+
+// extract the first field of the input text
+Field extract_field(std::string& input) {
+  int pos = 0;
+  // detect tag start
+  while (input[pos] != '<') { pos++; }
+  int start = pos;
+  // get tag
+  while (input[pos] != ' ') { pos++; }
+  int tag_end = pos;
+  // get field
+  while (input[pos] != '>') { pos++; }
+  int field_end = pos;
+
+  Field field = {
+    input.substr(start + 1, tag_end - start - 1),
+    input.substr(tag_end + 1, field_end - tag_end - 1)
+  };
+
+  input = input.substr(field_end + 1);
+
+  return field;
+}
+
 template <typename T>
 Path<T> extract_path(const std::string& filepath) {
   // read whole file
@@ -57,8 +84,11 @@ Path<T> extract_path(const std::string& filepath) {
   while (std::getline(file_in, line)) {
     file_contents += line;
   }
+  file_in.close();
 
-  //
+  // ignore svg field
+  auto svg_field = extract_field(file_contents);
+
 }
 
 // returns polyloop's coordinates in one line
