@@ -1,10 +1,12 @@
 #pragma once
 
+#include <cmath>
 #include <string>
 #include <vector>
 #include <array>
 #include <fstream>
 #include <cassert>
+#include <complex.h>
 #include <iostream>
 
 namespace VL {
@@ -14,9 +16,19 @@ struct Vec2 {
   T x, y;
   static Vec2 zero() { return { 0, 0 }; }
 
-  Vec2 operator+(const Vec2& v) { return { x + v.x, y + v.y }; }
-  Vec2 operator-(const Vec2& v) { return { x - v.x, y - v.y }; }
+  Vec2 operator+=(const Vec2& v) { x += v.x; y += v.y; return *this; }
+  Vec2 operator-=(const Vec2& v) { x -= v.x; y -= v.y; return *this; }
+  Vec2 operator*=(const T& s) { x *= s; y *= s; return *this; }
 };
+
+template <typename T>
+Vec2<T> operator+(const Vec2<T>& v1, const Vec2<T>& v2) { return { v1.x + v2.x, v1.y + v2.y }; }
+template <typename T>
+Vec2<T> operator-(const Vec2<T>& v1, const Vec2<T>& v2) { return { v1.x - v2.x, v1.y - v2.y }; }
+template <typename T>
+Vec2<T> operator*(const T& s, const Vec2<T>& v) { return { s * v.x, s * v.y }; }
+template <typename T>
+Vec2<T> operator*(const Vec2<T>& v, const T& s) { return { s * v.x, s * v.y }; }
 
 enum class SegType{
   Line,
@@ -39,6 +51,9 @@ class Segment {
 
     static Segment create_c_bezier(const Vec2<T>& s, const Vec2<T>& e, const Vec2<T>& c0, const Vec2<T>& c1)
     { return Segment({ s, e, c0, c1 }, SegType::CBezier); }
+
+    const std::array<Vec2<T>, 4>& points() const { return points_; }
+    SegType type() const { return type_; }
 
   private:
     std::array<Vec2<T>, 4> points_; // start point, end point, control points (if necessary)
@@ -329,6 +344,110 @@ Path<T> parse_svg(const std::string& filepath) {
   }
 
   return process_path<T>(attr.content);
+}
+
+template <int N, typename T>
+Vec2<T> sample_bezier(T param, const Segment<T>& bezier) {
+  assert(N == 2 || N == 3);
+  assert(0 <= param && param <= 1);
+
+  // value for computation
+  const auto& points = bezier.points();
+  constexpr T nCk[2][4] = { { 1, 2, 1, 0 }, { 1, 3, 3, 1 } };
+
+  auto ret = Vec2<T>::zero();
+  for (int k = 0; k < N + 1; k++) {
+    auto coef = static_cast<T>(nCk[N - 2][k] * std::pow(param, k) * std::pow(1. - param, N - k));
+    ret += Vec2<T>{ coef * points[k].x, coef * points[k].y };
+  }
+
+  return ret;
+}
+
+template <typename T>
+T distance(const Vec2<T>& a, const Vec2<T>& b) {
+  auto diff = a - b;
+  return std::sqrt(diff.x * diff.x + diff.y * diff.y);
+}
+
+template <typename T>
+std::vector<Vec2<T>> polyrize_pathloop(const Path<T>& pathloop, int div_count) {
+  // calculate whole length and each segment length
+  const int NUM_SEG_FOR_DIST = 10;
+  size_t num_segment = pathloop.size();
+
+  T whole_length = 0.;
+  std::vector<T> segment_lengths(num_segment, 0);
+
+  for (int i = 0; i < num_segment; i++) {
+    const auto& segment = pathloop[i];
+    const auto& points = segment.points();
+    T local_length = 0.;
+
+    switch (segment.type()) {
+      case SegType::Line : {
+        local_length += distance(points[0], points[1]);
+        break;
+      }
+      case SegType::QBezier : {
+        auto current_point = points[0];
+        for (int j = 0; j < NUM_SEG_FOR_DIST; j++) {
+          T param = T(j) / T(NUM_SEG_FOR_DIST);
+          auto next_point = sample_bezier<2, T>(param, segment);
+          local_length += distance(current_point, next_point);
+          current_point = next_point;
+        }
+        break;
+      }
+      case SegType::CBezier : {
+        auto current_point = points[0];
+        for (int j = 0; j < NUM_SEG_FOR_DIST; j++) {
+          T param = T(j) / T(NUM_SEG_FOR_DIST);
+          auto next_point = sample_bezier<3, T>(param, segment);
+          local_length += distance(current_point, next_point);
+          current_point = next_point;
+        }
+        break;
+      }
+    }
+    segment_lengths[i] = local_length;
+    whole_length += local_length;
+  }
+
+  // sample points on the loop
+  std::vector<Vec2<T>> ret;
+  ret.reserve(div_count);
+  for (int i = 0; i < num_segment; i++) {
+    const auto& segment = pathloop[i];
+    const auto& points = segment.points();
+    int local_div = static_cast<int>(segment_lengths[i] / whole_length * div_count);
+    for (int j = 0; j < local_div; j++) {
+      T param = T(j) / T(local_div);
+      switch (segment.type()) {
+        case SegType::Line : {
+          auto sample = points[0] + (points[1] - points[0]) * param;
+          ret.emplace_back(std::move(sample));
+          break;
+        }
+        case SegType::QBezier : {
+          auto sample = sample_bezier<2, T>(param, segment);
+          ret.emplace_back(std::move(sample));
+          break;
+        }
+        case SegType::CBezier : {
+          auto sample = sample_bezier<3, T>(param, segment);
+          ret.emplace_back(std::move(sample));
+          break;
+        }
+        default : {
+          std::cerr << "unsupported segment type." << std::endl;
+          break;
+        }
+      }
+    }
+  }
+
+  return ret;
 }
 
 } // namespace VL
