@@ -133,6 +133,26 @@ void erase_specific_string(std::string& input, const char c) {
   }
 }
 
+void replace_char(std::string& input, const char target, const char dest) {
+  for (auto& c : input) { if (c == target) c = dest; }
+}
+
+void preprocess_path_string(std::string& input) {
+  replace_char(input, ' ', ',');
+  replace_char(input, '\n', ',');
+
+  // erase unnecessary ','
+  int pos = 0;
+  auto is_digit = [](char c) { return '0' <= c && c <= '9'; };
+  while (pos < input.length() - 1) {
+    if (input[pos] == ',' && !is_digit(input[pos + 1])) {
+      input.erase(pos, 1);
+    }
+    else
+      pos++;
+  }
+}
+
 template <typename T>
 std::vector<T> extract_values(std::string& input) {
   int pos = 0;
@@ -167,8 +187,8 @@ std::vector<T> extract_values(std::string& input) {
 
 template <typename T>
 Path<T> process_path(std::string& path_string) {
-  // erase space
-  erase_specific_string(path_string, ' ');
+  // replace space
+  preprocess_path_string(path_string);
 
   Vec2<T> last_point = Vec2<T>::zero();
 
@@ -198,107 +218,191 @@ Path<T> process_path(std::string& path_string) {
 
     switch (type) {
       case 'l' : {
-        assert(values.size() == 2);
-        end_point = current_point + Vec2<T>{ values[0], values[1] };
-        segments.emplace_back(Segment<T>::create_line(current_point, end_point));
+        int num_value_set = 2;
+        assert(values.size() % num_value_set == 0);
+        int num_sub_set = values.size() / num_value_set;
+        for (int sub = 0; sub < num_sub_set; sub++) {
+          int offset = num_value_set * sub;
+          end_point = current_point + Vec2<T>{ values[offset + 0], values[offset + 1] };
+          segments.emplace_back(Segment<T>::create_line(current_point, end_point));
+          current_point = end_point;
+        }
         break;
       }
       case 'L' : {
-        assert(values.size() == 2);
-        end_point = Vec2<T>{ values[0], values[1] };
-        segments.emplace_back(Segment<T>::create_line(current_point, end_point));
+        int num_value_set = 2;
+        assert(values.size() % num_value_set == 0);
+        int num_sub_set = values.size() / num_value_set;
+        for (int sub = 0; sub < num_sub_set; sub++) {
+          int offset = num_value_set * sub;
+          end_point = Vec2<T>{ values[offset + 0], values[offset + 1] };
+          segments.emplace_back(Segment<T>::create_line(current_point, end_point));
+          current_point = end_point;
+        }
         break;
       }
       case 'h' : {
-        assert(values.size() == 1);
-        end_point = Vec2<T>{ current_point.x + values[0], current_point.y };
-        segments.emplace_back(Segment<T>::create_line(current_point, end_point));
+        int num_value_set = 1;
+        assert(values.size() % num_value_set == 0);
+        int num_sub_set = values.size() / num_value_set;
+        for (int sub = 0; sub < num_sub_set; sub++) {
+          int offset = num_value_set * sub;
+          end_point = Vec2<T>{ current_point.x + values[offset + 0], current_point.y };
+          segments.emplace_back(Segment<T>::create_line(current_point, end_point));
+          current_point = end_point;
+        }
         break;
       }
       case 'H' : {
-        assert(values.size() == 1);
-        end_point = Vec2<T>{ values[0], current_point.y };
-        segments.emplace_back(Segment<T>::create_line(current_point, end_point));
+        int num_value_set = 1;
+        assert(values.size() % num_value_set == 0);
+        int num_sub_set = values.size() / num_value_set;
+        for (int sub = 0; sub < num_sub_set; sub++) {
+          int offset = num_value_set * sub;
+          end_point = Vec2<T>{ values[offset + 0], current_point.y };
+          segments.emplace_back(Segment<T>::create_line(current_point, end_point));
+          current_point = end_point;
+        }
         break;
       }
       case 'v' : {
-        assert(values.size() == 1);
-        end_point = Vec2<T>{ current_point.x, current_point.y + values[0] };
-        segments.emplace_back(Segment<T>::create_line(current_point, end_point));
+        int num_value_set = 1;
+        assert(values.size() % num_value_set == 0);
+        int num_sub_set = values.size() / num_value_set;
+        for (int sub = 0; sub < num_sub_set; sub++) {
+          int offset = num_value_set * sub;
+          end_point = Vec2<T>{ current_point.x, current_point.y + values[offset + 0] };
+          segments.emplace_back(Segment<T>::create_line(current_point, end_point));
+          current_point = end_point;
+        }
         break;
       }
       case 'V' : {
-        assert(values.size() == 1);
-        end_point = Vec2<T>{ current_point.x, values[0] };
-        segments.emplace_back(Segment<T>::create_line(current_point, end_point));
+        int num_value_set = 1;
+        assert(values.size() % num_value_set == 0);
+        int num_sub_set = values.size() / num_value_set;
+        for (int sub = 0; sub < num_sub_set; sub++) {
+          int offset = num_value_set * sub;
+          end_point = Vec2<T>{ current_point.x, values[offset + 0] };
+          segments.emplace_back(Segment<T>::create_line(current_point, end_point));
+          current_point = end_point;
+        }
         break;
       }
       case 'q' : {
-        assert(values.size() == 4);
-        auto cp = Vec2<T>{ values[0], values[1] } + current_point;
-        previous_control = cp;
-        end_point = Vec2<T>{ values[2], values[3] } + current_point;
-        segments.emplace_back(Segment<T>::create_q_bezier(current_point, cp, end_point));
+        int num_value_set = 4;
+        assert(values.size() % num_value_set == 0);
+        int num_sub_set = values.size() / num_value_set;
+        for (int sub = 0; sub < num_sub_set; sub++) {
+          int offset = num_value_set * sub;
+          auto cp = Vec2<T>{ values[offset + 0], values[offset + 1] } + current_point;
+          previous_control = cp;
+          end_point = Vec2<T>{ values[offset + 2], values[offset + 3] } + current_point;
+          segments.emplace_back(Segment<T>::create_q_bezier(current_point, cp, end_point));
+          current_point = end_point;
+        }
         break;
       }
       case 'Q' : {
-        assert(values.size() == 4);
-        auto cp = Vec2<T>{ values[0], values[1] };
-        previous_control = cp;
-        end_point = Vec2<T>{ values[2], values[3] };
-        segments.emplace_back(Segment<T>::create_q_bezier(current_point, cp, end_point));
+        int num_value_set = 4;
+        assert(values.size() % num_value_set == 0);
+        int num_sub_set = values.size() / num_value_set;
+        for (int sub = 0; sub < num_sub_set; sub++) {
+          int offset = num_value_set * sub;
+          auto cp = Vec2<T>{ values[offset + 0], values[offset + 1] };
+          previous_control = cp;
+          end_point = Vec2<T>{ values[offset + 2], values[offset + 3] };
+          segments.emplace_back(Segment<T>::create_q_bezier(current_point, cp, end_point));
+          current_point = end_point;
+        }
         break;
       }
       case 't' : {
-        assert(values.size() == 2);
-        auto cp = current_point - (previous_control + current_point);
-        previous_control = cp;
-        end_point = Vec2<T>{ values[0], values[1] } + current_point;
-        segments.emplace_back(Segment<T>::create_q_bezier(current_point, cp, end_point));
+        int num_value_set = 2;
+        assert(values.size() % num_value_set == 0);
+        int num_sub_set = values.size() / num_value_set;
+        for (int sub = 0; sub < num_sub_set; sub++) {
+          int offset = num_value_set * sub;
+          auto cp = current_point - (previous_control + current_point);
+          previous_control = cp;
+          end_point = Vec2<T>{ values[offset + 0], values[offset + 1] } + current_point;
+          segments.emplace_back(Segment<T>::create_q_bezier(current_point, cp, end_point));
+          current_point = end_point;
+        }
         break;
       }
       case 'T' : {
-        assert(values.size() == 2);
-        auto cp = current_point - (previous_control + current_point);
-        previous_control = cp;
-        end_point = Vec2<T>{ values[0], values[1] };
-        segments.emplace_back(Segment<T>::create_q_bezier(current_point, cp, end_point));
+        int num_value_set = 2;
+        assert(values.size() % num_value_set == 0);
+        int num_sub_set = values.size() / num_value_set;
+        for (int sub = 0; sub < num_sub_set; sub++) {
+          int offset = num_value_set * sub;
+          auto cp = current_point - (previous_control + current_point);
+          previous_control = cp;
+          end_point = Vec2<T>{ values[offset + 0], values[offset + 1] };
+          segments.emplace_back(Segment<T>::create_q_bezier(current_point, cp, end_point));
+          current_point = end_point;
+        }
         break;
       }
       case 'c' : {
-        assert(values.size() == 6);
-        auto cp0 = Vec2<T>{ values[0], values[1] } + current_point;
-        auto cp1 = Vec2<T>{ values[2], values[3] } + current_point;
-        previous_control = cp1;
-        end_point = Vec2<T>{ values[4], values[5] } + current_point;
-        segments.emplace_back(Segment<T>::create_c_bezier(current_point, cp0, cp1, end_point));
+        int num_value_set = 6;
+        assert(values.size() % num_value_set == 0);
+        int num_sub_set = values.size() / num_value_set;
+        for (int sub = 0; sub < num_sub_set; sub++) {
+          int offset = num_value_set * sub;
+          auto cp0 = Vec2<T>{ values[offset + 0], values[offset + 1] } + current_point;
+          auto cp1 = Vec2<T>{ values[offset + 2], values[offset + 3] } + current_point;
+          previous_control = cp1;
+          end_point = Vec2<T>{ values[offset + 4], values[offset + 5] } + current_point;
+          segments.emplace_back(Segment<T>::create_c_bezier(current_point, cp0, cp1, end_point));
+          current_point = end_point;
+        }
         break;
       }
       case 'C' : {
-        assert(values.size() == 6);
-        auto cp0 = Vec2<T>{ values[0], values[1] };
-        auto cp1 = Vec2<T>{ values[2], values[3] };
-        previous_control = cp1;
-        end_point = Vec2<T>{ values[4], values[5] };
-        segments.emplace_back(Segment<T>::create_c_bezier(current_point, cp0, cp1, end_point));
+        int num_value_set = 6;
+        assert(values.size() % num_value_set == 0);
+        int num_sub_set = values.size() / num_value_set;
+        for (int sub = 0; sub < num_sub_set; sub++) {
+          int offset = num_value_set * sub;
+          auto cp0 = Vec2<T>{ values[offset + 0], values[offset + 1] };
+          auto cp1 = Vec2<T>{ values[offset + 2], values[offset + 3] };
+          previous_control = cp1;
+          end_point = Vec2<T>{ values[offset + 4], values[offset + 5] };
+          segments.emplace_back(Segment<T>::create_c_bezier(current_point, cp0, cp1, end_point));
+          current_point = end_point;
+        }
         break;
       }
       case 's' : {
-        assert(values.size() == 4);
-        auto cp0 = current_point - (previous_control - current_point);
-        auto cp1 = Vec2<T>{ values[0], values[1] } + current_point;
-        previous_control = cp1;
-        end_point = Vec2<T>{ values[2], values[3] } + current_point;
-        segments.emplace_back(Segment<T>::create_c_bezier(current_point, cp0, cp1, end_point));
+        int num_value_set = 4;
+        assert(values.size() % num_value_set == 0);
+        int num_sub_set = values.size() / num_value_set;
+        for (int sub = 0; sub < num_sub_set; sub++) {
+          int offset = num_value_set * sub;
+          auto cp0 = current_point - (previous_control - current_point);
+          auto cp1 = Vec2<T>{ values[offset + 0], values[offset + 1] } + current_point;
+          previous_control = cp1;
+          end_point = Vec2<T>{ values[offset + 2], values[offset + 3] } + current_point;
+          segments.emplace_back(Segment<T>::create_c_bezier(current_point, cp0, cp1, end_point));
+          current_point = end_point;
+        }
         break;
       }
       case 'S' : {
-        assert(values.size() == 4);
-        auto cp0 = current_point - (previous_control - current_point);
-        auto cp1 = Vec2<T>{ values[0], values[1] };
-        previous_control = cp1;
-        end_point = Vec2<T>{ values[2], values[3] };
-        segments.emplace_back(Segment<T>::create_c_bezier(current_point, cp0, cp1, end_point));
+        int num_value_set = 4;
+        assert(values.size() % num_value_set == 0);
+        int num_sub_set = values.size() / num_value_set;
+        for (int sub = 0; sub < num_sub_set; sub++) {
+          int offset = num_value_set * sub;
+          auto cp0 = current_point - (previous_control - current_point);
+          auto cp1 = Vec2<T>{ values[offset + 0], values[offset + 1] };
+          previous_control = cp1;
+          end_point = Vec2<T>{ values[offset + 2], values[offset + 3] };
+          segments.emplace_back(Segment<T>::create_c_bezier(current_point, cp0, cp1, end_point));
+          current_point = end_point;
+        }
         break;
       }
       default : {
@@ -306,7 +410,6 @@ Path<T> process_path(std::string& path_string) {
         break;
       }
     }
-    current_point = end_point;
   }
 
   return segments;
@@ -320,6 +423,7 @@ Path<T> parse_svg(const std::string& filepath) {
   std::ifstream file_in(filepath);
   while (std::getline(file_in, line)) {
     file_contents += line;
+    file_contents += '\n';
   }
   file_in.close();
 
@@ -328,6 +432,9 @@ Path<T> parse_svg(const std::string& filepath) {
 
   // ignore svg field
   auto svg_field = extract_field(file_contents);
+  while (svg_field.tag != "svg") {
+    svg_field = extract_field(file_contents);
+  }
   assert(svg_field.tag == "svg");
 
   // also ignore g field and extract path field
