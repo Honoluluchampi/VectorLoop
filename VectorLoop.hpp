@@ -45,11 +45,11 @@ class Segment {
     static Segment create_line(const Vec2<T>& s, const Vec2<T>& e)
     { return Segment({ s, e, Vec2<T>::zero(), Vec2<T>::zero() }, SegType::Line); }
 
-    static Segment create_q_bezier(const Vec2<T>& s, const Vec2<T>& e, const Vec2<T>& c)
-    { return Segment({ s, e, c, Vec2<T>::zero() }, SegType::QBezier); }
+    static Segment create_q_bezier(const Vec2<T>& s, const Vec2<T>& c, const Vec2<T>& e)
+    { return Segment({ s, c, e, Vec2<T>::zero() }, SegType::QBezier); }
 
-    static Segment create_c_bezier(const Vec2<T>& s, const Vec2<T>& e, const Vec2<T>& c0, const Vec2<T>& c1)
-    { return Segment({ s, e, c0, c1 }, SegType::CBezier); }
+    static Segment create_c_bezier(const Vec2<T>& s, const Vec2<T>& c0, const Vec2<T>& c1, const Vec2<T>& e)
+    { return Segment({ s, c0, c1, e }, SegType::CBezier); }
 
     const std::array<Vec2<T>, 4>& points() const { return points_; }
     SegType type() const { return type_; }
@@ -238,7 +238,7 @@ Path<T> process_path(std::string& path_string) {
         auto cp = Vec2<T>{ values[0], values[1] } + current_point;
         previous_control = cp;
         end_point = Vec2<T>{ values[2], values[3] } + current_point;
-        segments.emplace_back(Segment<T>::create_q_bezier(current_point, end_point, cp));
+        segments.emplace_back(Segment<T>::create_q_bezier(current_point, cp, end_point));
         break;
       }
       case 'Q' : {
@@ -246,7 +246,7 @@ Path<T> process_path(std::string& path_string) {
         auto cp = Vec2<T>{ values[0], values[1] };
         previous_control = cp;
         end_point = Vec2<T>{ values[2], values[3] };
-        segments.emplace_back(Segment<T>::create_q_bezier(current_point, end_point, cp));
+        segments.emplace_back(Segment<T>::create_q_bezier(current_point, cp, end_point));
         break;
       }
       case 't' : {
@@ -254,7 +254,7 @@ Path<T> process_path(std::string& path_string) {
         auto cp = current_point - (previous_control + current_point);
         previous_control = cp;
         end_point = Vec2<T>{ values[0], values[1] } + current_point;
-        segments.emplace_back(Segment<T>::create_q_bezier(current_point, end_point, cp));
+        segments.emplace_back(Segment<T>::create_q_bezier(current_point, cp, end_point));
         break;
       }
       case 'T' : {
@@ -262,7 +262,7 @@ Path<T> process_path(std::string& path_string) {
         auto cp = current_point - (previous_control + current_point);
         previous_control = cp;
         end_point = Vec2<T>{ values[0], values[1] };
-        segments.emplace_back(Segment<T>::create_q_bezier(current_point, end_point, cp));
+        segments.emplace_back(Segment<T>::create_q_bezier(current_point, cp, end_point));
         break;
       }
       case 'c' : {
@@ -271,7 +271,7 @@ Path<T> process_path(std::string& path_string) {
         auto cp1 = Vec2<T>{ values[2], values[3] } + current_point;
         previous_control = cp1;
         end_point = Vec2<T>{ values[4], values[5] } + current_point;
-        segments.emplace_back(Segment<T>::create_c_bezier(current_point, end_point, cp0, cp1));
+        segments.emplace_back(Segment<T>::create_c_bezier(current_point, cp0, cp1, end_point));
         break;
       }
       case 'C' : {
@@ -280,7 +280,7 @@ Path<T> process_path(std::string& path_string) {
         auto cp1 = Vec2<T>{ values[2], values[3] };
         previous_control = cp1;
         end_point = Vec2<T>{ values[4], values[5] };
-        segments.emplace_back(Segment<T>::create_c_bezier(current_point, end_point, cp0, cp1));
+        segments.emplace_back(Segment<T>::create_c_bezier(current_point, cp0, cp1, end_point));
         break;
       }
       case 's' : {
@@ -289,7 +289,7 @@ Path<T> process_path(std::string& path_string) {
         auto cp1 = Vec2<T>{ values[0], values[1] } + current_point;
         previous_control = cp1;
         end_point = Vec2<T>{ values[2], values[3] } + current_point;
-        segments.emplace_back(Segment<T>::create_c_bezier(current_point, end_point, cp0, cp1));
+        segments.emplace_back(Segment<T>::create_c_bezier(current_point, cp0, cp1, end_point));
         break;
       }
       case 'S' : {
@@ -298,7 +298,7 @@ Path<T> process_path(std::string& path_string) {
         auto cp1 = Vec2<T>{ values[0], values[1] };
         previous_control = cp1;
         end_point = Vec2<T>{ values[2], values[3] };
-        segments.emplace_back(Segment<T>::create_c_bezier(current_point, end_point, cp0, cp1));
+        segments.emplace_back(Segment<T>::create_c_bezier(current_point, cp0, cp1, end_point));
         break;
       }
       default : {
